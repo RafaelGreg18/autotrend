@@ -1,0 +1,7 @@
+torch
+numpy  
+pytorch-lightning
+scikit-learn
+mlflow
+matplotlib
+pandas

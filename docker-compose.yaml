@@ -1,0 +1,61 @@
+services:
+  etl:
+    build:
+      context: ./src/ETL
+      dockerfile: Dockerfile
+    volumes:
+      - ./data_lake:/data_lake
+      - ./data_warehouse:/data_warehouse
+      - ./src/ETL:/src
+    depends_on:
+      - data-manager
+
+  train:
+    build:
+      context: ./src/train
+      dockerfile: Dockerfile
+    volumes:
+      - ./data_warehouse:/data_warehouse
+      - ./src/train:/train
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    env_file:
+      - path: ./src/train/mlflow_vars.env
+
+  data-manager:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: autotrend
+      POSTGRES_USER: autotrend_user
+      POSTGRES_PASSWORD: autotrend_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/data-manager/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autotrend_user -d autotrend"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  controller:
+    build:
+      context: ./src/controller
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/controller:/app
+    depends_on:
+      - data-manager
+    environment:
+      - DATABASE_URL=postgresql://autotrend_user:autotrend_pass@data-manager:5432/autotrend
+
+volumes:
+  postgres_data:

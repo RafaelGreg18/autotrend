@@ -1,0 +1,8 @@
+model_registry/
+**__pycache__**
+venv/
+**lightning_logs**
+**mlartifacts/
+**mlruns
+data_lake/
+data_warehouse/
