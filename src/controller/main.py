@@ -40,8 +40,9 @@ app = FastAPI(title="AutoTrend Controller", version="1.0.0")
 async def startup_event():
     init_db()
 
-## Routes
-
+###############
+#   Routes    #
+###############
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):
@@ -90,7 +91,7 @@ async def create_ticker(ticker_name: str, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/tickers/{ticker_name}/update-date")
+@app.put("/tickers/{ticker_name}/update-date")
 async def update_ticker_date(ticker_name: str, db: Session = Depends(get_db)):
     """Update ticker's last_update to today"""
     ticker = db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first()
@@ -105,7 +106,7 @@ async def update_ticker_date(ticker_name: str, db: Session = Depends(get_db)):
         "last_update": ticker.last_update
     }
 
-@app.post("/tickers/{ticker_name}/update-status")
+@app.put("/tickers/{ticker_name}/update-status")
 async def update_ticker_status(ticker_name: str, is_active: bool, db: Session = Depends(get_db)):
     """Update ticker's active status"""
     ticker = db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first()
