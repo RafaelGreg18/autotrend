@@ -8,7 +8,8 @@ services:
       - ./data_warehouse:/data_warehouse
       - ./src/ETL:/src
     depends_on:
-      - data-manager
+      data-manager:
+        condition: service_healthy
 
   train:
     build:
@@ -35,14 +36,14 @@ services:
       POSTGRES_PASSWORD: autotrend_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/data-manager/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U autotrend_user -d autotrend"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   controller:
     build:
@@ -53,7 +54,8 @@ services:
     volumes:
       - ./src/controller:/app
     depends_on:
-      - data-manager
+      data-manager:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://autotrend_user:autotrend_pass@data-manager:5432/autotrend
 

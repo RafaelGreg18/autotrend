@@ -1,6 +1,4 @@
 import pandas as pd
-import os
-
 
 def calculate_indicators(raw_data: pd.DataFrame) -> pd.DataFrame:
     """

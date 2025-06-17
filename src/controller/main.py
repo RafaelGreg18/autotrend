@@ -21,7 +21,10 @@ class Ticker(Base):
     is_active = Column(Boolean, default=True)
 
 # FastAPI app
-app = FastAPI(title="AutoTrend Controller", version="1.0.0")
+
+def init_db():
+    """Initialize database tables"""
+    Base.metadata.create_all(bind=engine)
 
 # Dependency to get DB session
 def get_db():
@@ -31,16 +34,14 @@ def get_db():
     finally:
         db.close()
 
-# Routes
-@app.get("/")
-async def hello_world():
-    """Simple hello world endpoint"""
-    return {"message": "Hello World from AutoTrend Controller!"}
+app = FastAPI(title="AutoTrend Controller", version="1.0.0")
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "autotrend-controller"}
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
+## Routes
+
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):
@@ -67,7 +68,29 @@ async def get_ticker(ticker_name: str, db: Session = Depends(get_db)):
         "is_active": ticker.is_active
     }
 
-@app.post("/tickers/{ticker_name}/update")
+
+@app.post("/tickers")
+async def create_ticker(ticker_name: str, db: Session = Depends(get_db)):
+    """Create a new ticker"""
+    if db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first() is not None:
+        raise HTTPException(status_code=400, detail="Ticker already exists")
+    
+    new_ticker = Ticker(ticker_name=ticker_name, last_update=date.today(), is_active=True)
+    db.add(new_ticker)
+    db.commit()
+    db.refresh(new_ticker)
+    
+    return {
+        "message": f"Ticker {ticker_name} created successfully",
+        "ticker": {
+            "ticker_name": new_ticker.ticker_name,
+            "last_update": new_ticker.last_update,
+            "is_active": new_ticker.is_active
+        }
+    }
+
+
+@app.post("/tickers/{ticker_name}/update-date")
 async def update_ticker_date(ticker_name: str, db: Session = Depends(get_db)):
     """Update ticker's last_update to today"""
     ticker = db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first()
@@ -78,9 +101,55 @@ async def update_ticker_date(ticker_name: str, db: Session = Depends(get_db)):
     db.commit()
     
     return {
-        "message": f"Ticker {ticker_name} updated successfully",
+        "message": f"Ticker {ticker_name} date updated successfully",
         "last_update": ticker.last_update
     }
+
+@app.post("/tickers/{ticker_name}/update-status")
+async def update_ticker_status(ticker_name: str, is_active: bool, db: Session = Depends(get_db)):
+    """Update ticker's active status"""
+    ticker = db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first()
+    if ticker is None:
+        raise HTTPException(status_code=404, detail="Ticker not found")
+    
+    ticker.is_active = is_active
+    db.commit()
+    
+    return {
+        "message": f"Ticker {ticker_name} status updated successfully",
+        "is_active": ticker.is_active
+    }
+
+@app.get("/active-tickers")
+async def get_active_tickers(db: Session = Depends(get_db)):
+    """Get all active tickers"""
+    active_tickers = db.query(Ticker).filter(Ticker.is_active == True).all()
+    return {"active_tickers": [
+        {
+            "ticker_name": ticker.ticker_name,
+            "last_update": ticker.last_update
+        } for ticker in active_tickers
+    ]}
+
+# delete all tickers
+@app.delete("/tickers")
+async def delete_all_tickers(db: Session = Depends(get_db)):
+    """Delete all tickers from database"""
+    db.query(Ticker).delete()
+    db.commit()
+    return {"message": "All tickers deleted successfully"}
+
+@app.delete("/tickers/{ticker_name}")
+async def delete_ticker(ticker_name: str, db: Session = Depends(get_db)):
+    """Delete a specific ticker"""
+    ticker = db.query(Ticker).filter(Ticker.ticker_name == ticker_name).first()
+    if ticker is None:
+        raise HTTPException(status_code=404, detail="Ticker not found")
+    
+    db.delete(ticker)
+    db.commit()
+    
+    return {"message": f"Ticker {ticker_name} deleted successfully"}
 
 if __name__ == "__main__":
     import uvicorn
