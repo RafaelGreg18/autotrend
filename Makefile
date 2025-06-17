@@ -1,4 +1,5 @@
 up:
+	@mkdir data_lake data_warehouse model_registry && \
 	docker compose up
 
 down:
