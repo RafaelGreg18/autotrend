@@ -10,6 +10,7 @@ def calculate_indicators(raw_data: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with added technical indicators
     """
+
     df = raw_data.copy()
     
     df['SMA_20'] = df['Close'].rolling(window=20).mean()
