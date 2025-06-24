@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import date
 import os
 
+from celery_controller import send_etl_task
+
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://autotrend_user:autotrend_pass@localhost:5432/autotrend")
 
@@ -43,6 +45,18 @@ async def startup_event():
 ###############
 #   Routes    #
 ###############
+
+@app.post('/etl/trigger')
+async def trigger_etl(ticker_name: str, start_date: str | None = None):
+    """
+    Trigger the ETL process for a given ticker (sends task to Celery).
+    
+    Args:
+        ticker_name (str): The name of the ticker to download data for.
+        start_date (str | None): The start date for downloading data. If None, will download historical data from the beginning.
+    """
+    send_etl_task(ticker_name, start_date)
+    return {"message": f"ETL task triggered for {ticker_name} with start date {start_date}"}
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):

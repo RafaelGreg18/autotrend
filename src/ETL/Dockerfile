@@ -7,5 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD tail -f /dev/null
-# CMD ["python", "main.py"]
+CMD ["celery", "-A", "celery_worker", "worker", "--loglevel=info"]

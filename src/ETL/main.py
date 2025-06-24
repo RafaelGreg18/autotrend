@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import pandas as pd 
 
+
 def get_ticker_data(ticker_name: str, start_date: str | None) -> None:
     """
     Downloads and stores raw data at data_lake and data with technical indicators at data_warehouse.
