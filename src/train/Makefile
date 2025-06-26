@@ -4,7 +4,7 @@ clear-mlflow:
 	@rm -rf mlartifacts
 	@echo "MLflow mlruns and mlartifacts cleared."
 
-start_mlflow:
+start-mlflow:
 	@echo "Starting MLflow server..."
 	mlflow server \
 		--host ${MLFLOW_HOST_IP} \
