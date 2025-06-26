@@ -1,7 +1,8 @@
-import pytorch_lightning as pl
 import torch
-import torchmetrics
 import torch.nn as nn
+import torchmetrics
+import torchmetrics.classification
+import pytorch_lightning as pl
 
 class LSTMClassifier(pl.LightningModule):
     def __init__(self, input_size, hidden_size, num_layers, output_size, dropout=0.2, lr=0.001):
@@ -16,6 +17,7 @@ class LSTMClassifier(pl.LightningModule):
         self.accuracy = torchmetrics.classification.Accuracy(task="multiclass", num_classes=2)
         self.precision = torchmetrics.classification.Precision(task="multiclass", num_classes=2, average="macro")
         self.recall = torchmetrics.classification.Recall(task="multiclass", num_classes=2, average="macro")
+        self.f1 = torchmetrics.classification.F1Score(task="multiclass", num_classes=2, average="macro")
 
     def forward(self, x):
         if len(x.shape) == 2:
@@ -42,11 +44,13 @@ class LSTMClassifier(pl.LightningModule):
         acc = self.accuracy(preds, y)
         prec = self.precision(preds, y)
         rec = self.recall(preds, y)
+        f1 = self.f1(preds, y)
 
         self.log('train_loss', loss)
         self.log('train_acc', acc)
         self.log('train_precision', prec)
         self.log('train_recall', rec)
+        self.log('train_f1', f1)
 
         return loss
 
@@ -59,14 +63,15 @@ class LSTMClassifier(pl.LightningModule):
         _, predicted = torch.max(y_hat, 1)
         correct = (predicted == y).sum().item()
         accuracy = correct / y.size(0)
-        
+        f1_score = self.f1(predicted, y)
         # Log metrics
         self.log('test_loss', loss)
         self.log('test_acc', accuracy)
         self.log('test_precision', self.precision(predicted, y))
         self.log('test_recall', self.recall(predicted, y))
-        
-        return {'test_loss': loss, 'test_acc': accuracy}
+        self.log('test_f1', self.f1(predicted, y))
+
+        return {'test_loss': loss, 'test_f1': f1_score, 'test_acc': accuracy}
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
