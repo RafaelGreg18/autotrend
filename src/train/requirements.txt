@@ -1,7 +1,8 @@
-torch
+torch==2.7.0
 numpy  
 pytorch-lightning
 scikit-learn
 mlflow
 matplotlib
 pandas
+lightning[extra]
