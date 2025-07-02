@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy import create_engine, Column, String, Date, Boolean
+from sqlalchemy import create_engine, Column, String, Date, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import date
@@ -13,16 +13,22 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://autotrend_user:autotrend_
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+app = FastAPI(title="AutoTrend Controller", version="1.0.0")
 
 # Database model
 class Ticker(Base):
     __tablename__ = "tickers"
     
     ticker_name = Column(String(20), primary_key=True, index=True)
-    last_update = Column(Date)
+    last_data_update = Column(Date)
     is_active = Column(Boolean, default=True)
 
-# FastAPI app
+class BestModel(Base):
+    __tablename__ = "best_models"
+    
+    ticker_name = Column(String(20), primary_key=True, index=True)
+    last_model_update = Column(Date)
+    f1_score = Column(Float)
 
 def init_db():
     """Initialize database tables"""
@@ -36,7 +42,6 @@ def get_db():
     finally:
         db.close()
 
-app = FastAPI(title="AutoTrend Controller", version="1.0.0")
 
 @app.on_event("startup")
 async def startup_event():
@@ -57,6 +62,25 @@ async def trigger_etl(ticker_name: str, start_date: str | None = None):
     """
     send_etl_task(ticker_name, start_date)
     return {"message": f"ETL task triggered for {ticker_name} with start date {start_date}"}
+
+@app.post('train/model')
+async def include_model(ticker_name: str, f1_score: float):
+    ## TODO: send train message to a celery in train service
+    
+    new_model = BestModel(ticker_name=ticker_name, last_update=date.today(), f1_score=f1_score)
+    db = SessionLocal()
+    db.add(new_model)
+    db.commit()
+    db.refresh(new_model)
+
+    return {
+        "message": f"Model for {ticker_name} included successfully",
+        "model": {
+            "ticker_name": new_model.ticker_name,
+            "last_update": new_model.last_update,
+            "f1_score": new_model.f1_score
+        }
+    }
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):
