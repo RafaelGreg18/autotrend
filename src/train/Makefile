@@ -13,3 +13,7 @@ start-mlflow:
 train:
 	@echo "Running training script..."
 	python main.py
+
+setup:
+	make start-mlflow & \
+	celery -A train_worker worker --loglevel=info --queues=train

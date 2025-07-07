@@ -33,19 +33,8 @@ services:
     env_file:
       - path: ./src/train/mlflow_vars.env
     depends_on:
-      - mlflow-service
       - rabbitmq
-    command: ["celery", "-A", "train_worker", "worker", "--loglevel=info", "--queues=train"]
-
-  mlflow-service:
-    image: ubuntu/mlflow:2.1.1_1.0-22.04
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./src/train/mlruns:/mlflow/mlruns
-      - ./src/train/mlartifacts:/mlflow/mlartifacts
-    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri file:///mlflow/mlruns --default-artifact-root file:///mlflow/mlartifacts
-
+    command: ["make", "setup"]
   data-manager:
     image: postgres:15
     environment:
