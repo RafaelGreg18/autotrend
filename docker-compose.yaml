@@ -18,6 +18,8 @@ services:
     volumes:
       - ./data_warehouse:/data_warehouse
       - ./src/train:/train
+    ports:
+      - "8080:8080"
     deploy:
       resources:
         reservations:

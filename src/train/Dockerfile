@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD tail -f /dev/null
+CMD ["make", "start-mlflow"]

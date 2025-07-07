@@ -8,6 +8,6 @@ def some_task(x, y):
 
 def send_etl_task(ticker_name, start_date=None):
     app.send_task(
-        "celery_worker.run_etl_task",
+        "etl_worker.run_etl_task",
         args=[ticker_name, start_date]
     )

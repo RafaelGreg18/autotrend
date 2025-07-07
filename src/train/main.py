@@ -6,7 +6,7 @@ import mlflow.pytorch
 
 # Custom dataset and model
 from stock_dataset import StockDataset
-from model import LSTMClassifier
+from lstm_classifier import LSTMClassifier
 
 # System libraries
 import pathlib

@@ -6,3 +6,4 @@ mlflow
 matplotlib
 pandas
 lightning[extra]
+celery

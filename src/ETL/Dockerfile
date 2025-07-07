@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["celery", "-A", "celery_worker", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "etl_worker", "worker", "--loglevel=info"]

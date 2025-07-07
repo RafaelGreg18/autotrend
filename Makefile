@@ -5,6 +5,9 @@ up:
 down:
 	docker compose down
 
+build:
+	docker compose build
+
 clear-data:
 	rm data_lake/*
 	rm data_warehouse/*
