@@ -12,16 +12,15 @@ from lstm_classifier import LSTMClassifier
 import pathlib
 import os
 
-import argparse
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train an LSTM model for stock prediction.")
-
-    parser.add_argument('--set_tracking_uri', type=str, default='http://127.0.0.1:8080')
-
-    return parser.parse_args()
+# Constants
+DATA_WAREHOUSE = (pathlib.Path(__file__).parent.parent / 'data_warehouse').resolve()
+DATA_WAREHOUSE = str(DATA_WAREHOUSE)
+MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'http://localhost:8080')  # Set default tracking URI
 
 def train(**kwargs):
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+
     ## TODO: continue transcribing the training process from main
     input_size = kwargs.get('input_size', 8)
     hidden_size = kwargs.get('hidden_size', 128)
@@ -30,7 +29,8 @@ def train(**kwargs):
     sequence_length = kwargs.get('sequence_length', 30)
     train_ratio = kwargs.get('train_ratio', 0.8)
     ticker_name = kwargs.get('ticker_name', None)
-    csv_path = kwargs.get('csv_path', None)
+    max_epochs = kwargs.get('max_epochs', 45)
+    csv_path = os.path.join(DATA_WAREHOUSE, ticker_name + '_indicators.csv')
 
     # Load the full dataset with sequence length
     full_dataset = StockDataset(csv_path, sequence_length=sequence_length)
@@ -69,46 +69,12 @@ def train(**kwargs):
     run_name = f"{ticker_name}_h{hidden_size}_l{num_layers}_seq{sequence_length}_e{max_epochs}_historical"
 
     # Train the model
-    with mlflow.start_run(run_name=run_name) as run:
+    with mlflow.start_run(run_name=run_name):
         trainer.fit(model, train_dataloader)
 
     # Evaluate on test data
     test_result = trainer.test(model, test_dataloader)
     print(f"Test results for {ticker_name}: {test_result}")
-    
-if __name__ == "__main__":
-    args = parse_args()
-    mlflow.set_tracking_uri(args.set_tracking_uri)
-
-    ## TODO: retrieve these parameters from a config file
-    input_size = 8  # Number of features
-    hidden_size = 64  # Number of LSTM units
-    num_layers = 3  # Number of LSTM layers
-    output_size = 2  # Number of classes
-    sequence_length = 30  # Number of time steps in each sequence
-    max_epochs = 45 # Number of epochs for training
-    # Define train/test split ratio
-    train_ratio = 0.8  # 80% for training, 20% for testing
-    
-    data_warehouse = (pathlib.Path(__file__).parent.parent / 'data_warehouse').resolve()
-    data_warehouse = str(data_warehouse)
-    for data in os.listdir(data_warehouse):
-        if data.endswith('_indicators.csv'):
-            ticker_name = data.removesuffix('_indicators.csv')
-            csv_path = os.path.join(data_warehouse, data)
-            train(
-                input_size=input_size,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                output_size=output_size,
-                sequence_length=sequence_length,
-                max_epochs=max_epochs,
-                train_ratio=train_ratio,
-                ticker_name=ticker_name,
-                csv_path=csv_path
-            )
-    print("Training completed for all datasets.")
-    print("All models trained and logged successfully.")
             
             
             

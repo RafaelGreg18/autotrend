@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["make", "start-mlflow"]
+CMD ["celery", "-A", "train_worker", "worker", "--loglevel=info", "--queues=train"]

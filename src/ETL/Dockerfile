@@ -7,4 +7,5 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["celery", "-A", "etl_worker", "worker", "--loglevel=info"]
+# This will be overridden by docker-compose, but good to have as default
+CMD ["celery", "-A", "etl_worker", "worker", "--loglevel=info", "--queues=etl"]

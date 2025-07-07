@@ -26,3 +26,6 @@ def check_tast_status(task_id):
     """
     result = app.AsyncResult(task_id)
     return result.status
+
+if __name__ == "__main__":
+    app.start(['worker', '--loglevel=info', '--queues=etl'])

@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import date
 import os
 
-from celery_controller import send_etl_task
+from celery_controller import send_etl_task, send_train_task
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://autotrend_user:autotrend_pass@localhost:5432/autotrend")
@@ -62,6 +62,27 @@ async def trigger_etl(ticker_name: str, start_date: str | None = None):
     """
     send_etl_task(ticker_name, start_date)
     return {"message": f"ETL task triggered for {ticker_name} with start date {start_date}"}
+
+@app.post('/train/trigger')
+async def trigger_train(ticker_name: str,
+                        input_size: int = 8,
+                        hidden_size: int = 128,
+                        num_layers: int = 3,
+                        output_size: int = 2,
+                        sequence_length: int = 30,
+                        train_ratio: float = 0.8,
+                        max_epochs: int = 45):
+    """Trigger the training process for a given ticker (sends task to Celery)."""
+    send_train_task(
+        ticker_name=ticker_name,
+        input_size=input_size,
+        hidden_size=hidden_size,
+        num_layers=num_layers,
+        output_size=output_size,
+        sequence_length=sequence_length,
+        train_ratio=train_ratio,
+        max_epochs=max_epochs
+    )
 
 @app.post('train/model')
 async def include_model(ticker_name: str, f1_score: float):
