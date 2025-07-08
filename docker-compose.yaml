@@ -21,6 +21,7 @@ services:
     volumes:
       - ./data_warehouse:/data_warehouse
       - ./src/train:/train
+      - ./model_registry:/model_registry
     ports:
       - "8080:8080"
     deploy:
