@@ -31,6 +31,7 @@ def get_ticker_data(ticker_name: str, start_date: str | None) -> None:
     # calculate technical indicators
     ticker_csv = ticker_name + ".csv"
     up_data_with_indicators = calculate_indicators(fixed_data)
+
     if ticker_csv in os.listdir(data_lake):
         # Merge with existing csv's, if they exist
         merged_raw = merge_dataframes([fixed_data, pd.read_csv(data_lake / ticker_csv)])
@@ -42,17 +43,6 @@ def get_ticker_data(ticker_name: str, start_date: str | None) -> None:
     else:
         print(f'Data {ticker_name} not found in data lake, saving new data...')
         # Save the new data to a csv file
-        up_data_with_indicators.to_csv(data_lake / ticker_csv, index=False)
+        fixed_data.to_csv(data_lake / ticker_csv, index=False)
         up_data_with_indicators.to_csv(data_warehouse / f"{ticker_name}_indicators.csv", index=False)
         print(f"Data {ticker_name} saved to data lake and indicators to data warehouse.")
-
-
-if __name__ == "__main__":
-    # Example usage
-    ticker_name = "AAPL"
-    start_date = "2020-01-01"
-    get_ticker_data(ticker_name, start_date)
-    ticker_name = "RACE"
-    start_date = None
-    get_ticker_data(ticker_name, start_date)
-    print("ETL process completed.")
