@@ -10,25 +10,27 @@ from celery_controller import send_etl_task, send_train_task
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://autotrend_user:autotrend_pass@localhost:5432/autotrend")
 
+# Create database engine and session
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 app = FastAPI(title="AutoTrend Controller", version="1.0.0")
+
 
 # Database model
 class Ticker(Base):
     __tablename__ = "tickers"
     
     ticker_name = Column(String(20), primary_key=True, index=True)
-    last_data_update = Column(Date)
+    last_update = Column(Date)
     is_active = Column(Boolean, default=True)
 
-class BestModel(Base):
-    __tablename__ = "best_models"
+class Model(Base):
+    __tablename__ = "models"
     
     ticker_name = Column(String(20), primary_key=True, index=True)
-    last_model_update = Column(Date)
-    f1_score = Column(Float)
+    last_update = Column(Date)
+    f1_score = Column(Float, nullable=True)
 
 def init_db():
     """Initialize database tables"""
@@ -41,7 +43,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -70,8 +71,10 @@ async def trigger_train(ticker_name: str,
                         num_layers: int = 3,
                         output_size: int = 2,
                         sequence_length: int = 30,
-                        train_ratio: float = 0.8,
-                        max_epochs: int = 45):
+                        train_ratio: float = 0.7,
+                        val_ratio: float = 0.2,
+                        max_epochs: int = 45,
+                        best_score: float = 0.0):
     """Trigger the training process for a given ticker (sends task to Celery)."""
     send_train_task(
         ticker_name=ticker_name,
@@ -81,27 +84,10 @@ async def trigger_train(ticker_name: str,
         output_size=output_size,
         sequence_length=sequence_length,
         train_ratio=train_ratio,
-        max_epochs=max_epochs
+        val_ratio=val_ratio,
+        max_epochs=max_epochs,
+        best_score=best_score
     )
-
-@app.post('train/model')
-async def include_model(ticker_name: str, f1_score: float):
-    ## TODO: send train message to a celery in train service
-    
-    new_model = BestModel(ticker_name=ticker_name, last_update=date.today(), f1_score=f1_score)
-    db = SessionLocal()
-    db.add(new_model)
-    db.commit()
-    db.refresh(new_model)
-
-    return {
-        "message": f"Model for {ticker_name} included successfully",
-        "model": {
-            "ticker_name": new_model.ticker_name,
-            "last_update": new_model.last_update,
-            "f1_score": new_model.f1_score
-        }
-    }
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):
@@ -148,7 +134,6 @@ async def create_ticker(ticker_name: str, db: Session = Depends(get_db)):
             "is_active": new_ticker.is_active
         }
     }
-
 
 @app.put("/tickers/{ticker_name}/update-date")
 async def update_ticker_date(ticker_name: str, db: Session = Depends(get_db)):
