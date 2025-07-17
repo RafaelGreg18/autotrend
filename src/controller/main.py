@@ -73,8 +73,7 @@ async def trigger_train(ticker_name: str,
                         sequence_length: int = 30,
                         train_ratio: float = 0.7,
                         val_ratio: float = 0.2,
-                        max_epochs: int = 45,
-                        best_score: float = 0.0):
+                        max_epochs: int = 45):
     """Trigger the training process for a given ticker (sends task to Celery)."""
     send_train_task(
         ticker_name=ticker_name,
@@ -86,8 +85,14 @@ async def trigger_train(ticker_name: str,
         train_ratio=train_ratio,
         val_ratio=val_ratio,
         max_epochs=max_epochs,
-        best_score=best_score
     )
+    # TODO: get answer from Celery task (f1 score), compare with previous model, save to database if better
+
+## TODO: Inference API
+# retrieve model from modelregistry
+# run inference
+
+# TODO: API to save model to modelregistry
 
 @app.get("/tickers")
 async def get_tickers(db: Session = Depends(get_db)):
@@ -113,7 +118,6 @@ async def get_ticker(ticker_name: str, db: Session = Depends(get_db)):
         "last_update": ticker.last_update,
         "is_active": ticker.is_active
     }
-
 
 @app.post("/tickers")
 async def create_ticker(ticker_name: str, db: Session = Depends(get_db)):

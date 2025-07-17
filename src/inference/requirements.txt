@@ -1,0 +1,5 @@
+mlflow
+pandas
+onnx
+onnxruntime
+celery

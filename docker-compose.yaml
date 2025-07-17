@@ -78,5 +78,34 @@ services:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: pass
 
+  inference:
+    build:
+      context: ./src/inference
+      dockerfile: Dockerfile
+    volumes:
+      - ./model_registry:/model_registry
+      - ./src/inference:/inference
+    ports:
+      - "2000:2000"
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      train:
+        condition: service_started
+  
+  orchestrator:
+    build:
+      context: ./src/orchestrator
+      dockerfile: Dockerfile
+    volumes:
+      - ./src/orchestrator:/orchestrator
+    ports:
+      - 9000:9000
+    depends_on:
+      data-manager:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
 volumes:
   postgres_data:
